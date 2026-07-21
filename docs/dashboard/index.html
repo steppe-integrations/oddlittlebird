@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Steppe × Odd Little Bird — Collaboration Dashboard</title>
+<style>
+  :root{
+    --bg:#f7f7f5; --panel:#ffffff; --ink:#1a1a1a; --ink-soft:#5b5b57;
+    --line:#e3e3df; --line-strong:#cfcfc9;
+    --accent:#2f6f4e; --accent-soft:#e7f1ea;
+    --blue:#3457a6; --blue-soft:#e8eef8;
+    --amber:#9a6a12; --amber-soft:#fbf1dc;
+    --red:#a33028; --red-soft:#fbe6e3;
+    --grey:#6a6a66; --grey-soft:#ececea;
+    --mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --maxw:980px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#16171a; --panel:#1f2125; --ink:#e9e9e6; --ink-soft:#a6a6a0;
+      --line:#2c2f34; --line-strong:#3a3e44;
+      --accent:#6fce9f; --accent-soft:#1c2a22;
+      --blue:#8fb0f0; --blue-soft:#1b2334;
+      --amber:#e0b45f; --amber-soft:#2c2416;
+      --red:#e88b82; --red-soft:#2e1c1a;
+      --grey:#9a9a94; --grey-soft:#25272b;
+    }
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);line-height:1.6;font-size:16px;-webkit-font-smoothing:antialiased}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{font-family:var(--mono);font-size:.86em;background:var(--grey-soft);
+    padding:.1em .38em;border-radius:4px;border:1px solid var(--line)}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 20px}
+
+  header.top{position:sticky;top:0;z-index:20;background:var(--panel);
+    border-bottom:1px solid var(--line);backdrop-filter:saturate(120%)}
+  .top-inner{max-width:var(--maxw);margin:0 auto;padding:14px 20px;
+    display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px}
+  .top h1{font-size:18px;margin:0;font-weight:650;letter-spacing:-.01em}
+  .top .sub{color:var(--ink-soft);font-size:13px}
+  .meta{margin-left:auto;display:flex;gap:14px;font-size:12px;color:var(--ink-soft);font-family:var(--mono)}
+  .meta b{color:var(--ink);font-weight:600}
+
+  nav.toc{border-bottom:1px solid var(--line);background:var(--bg)}
+  nav.toc .wrap{display:flex;flex-wrap:wrap;gap:6px 4px;padding-top:10px;padding-bottom:10px}
+  nav.toc a{font-size:12.5px;color:var(--ink-soft);padding:3px 9px;border-radius:20px;
+    border:1px solid transparent;white-space:nowrap}
+  nav.toc a:hover{color:var(--ink);border-color:var(--line-strong);text-decoration:none}
+
+  main{padding:34px 0 90px}
+  section{margin:0 0 46px;scroll-margin-top:120px}
+  h2{font-size:22px;margin:0 0 6px;letter-spacing:-.015em;font-weight:680}
+  h2 .n{color:var(--ink-soft);font-weight:500;font-family:var(--mono);font-size:15px;margin-right:8px}
+  h3{font-size:16px;margin:26px 0 8px;font-weight:650}
+  .lede{color:var(--ink-soft);margin:2px 0 18px;font-size:15px;max-width:70ch}
+  p{margin:12px 0;max-width:74ch}
+  ul,ol{max-width:74ch}
+  li{margin:5px 0}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:20px 22px;margin:16px 0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
+
+  .pill{display:inline-block;font-size:11px;font-weight:650;letter-spacing:.02em;
+    padding:2px 9px;border-radius:20px;border:1px solid;vertical-align:middle;
+    font-family:var(--mono);white-space:nowrap}
+  .pill.live{color:var(--accent);background:var(--accent-soft);border-color:var(--accent)}
+  .pill.partial{color:var(--amber);background:var(--amber-soft);border-color:var(--amber)}
+  .pill.gap{color:var(--red);background:var(--red-soft);border-color:var(--red)}
+  .pill.plan{color:var(--blue);background:var(--blue-soft);border-color:var(--blue)}
+  .pill.info{color:var(--grey);background:var(--grey-soft);border-color:var(--line-strong)}
+
+  .kicker{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--ink-soft);margin:0 0 4px}
+
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;margin:16px 0}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:640px}
+  th,td{text-align:left;padding:10px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+  thead th{background:var(--grey-soft);font-weight:650;font-size:12px;
+    letter-spacing:.02em;color:var(--ink-soft);position:sticky;top:0}
+  tbody tr:last-child td{border-bottom:none}
+  td .src{font-family:var(--mono);font-size:12px;color:var(--ink-soft)}
+
+  .note{border-left:3px solid var(--line-strong);padding:6px 0 6px 16px;margin:16px 0;
+    color:var(--ink-soft);font-size:14.5px}
+  .note.warn{border-color:var(--amber)}
+  .note b{color:var(--ink)}
+
+  .phase{display:flex;gap:14px;align-items:flex-start;padding:16px 0;border-top:1px solid var(--line)}
+  .phase:first-child{border-top:none}
+  .phase .dot{flex:0 0 auto;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
+    font-family:var(--mono);font-size:13px;font-weight:700;border:1px solid var(--line-strong);
+    background:var(--panel);color:var(--ink-soft)}
+  .phase.done .dot{background:var(--grey-soft);color:var(--ink);border-color:var(--line-strong)}
+  .phase.now .dot{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .phase .body{flex:1}
+  .phase h4{margin:2px 0 4px;font-size:15.5px}
+  .phase .g{color:var(--ink-soft);font-size:13.5px}
+
+  .log{font-size:14px}
+  .log .row{display:flex;gap:14px;padding:9px 0;border-top:1px dashed var(--line)}
+  .log .row:first-child{border-top:none}
+  .log .d{font-family:var(--mono);font-size:12px;color:var(--ink-soft);flex:0 0 92px}
+
+  /* spec panel — swagger-flavored, self-contained */
+  .op{border:1px solid var(--line);border-radius:10px;margin:10px 0;overflow:hidden;background:var(--panel)}
+  .op summary{display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer;list-style:none}
+  .op summary::-webkit-details-marker{display:none}
+  .op summary:hover{background:var(--grey-soft)}
+  .method{font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.03em;
+    padding:3px 10px;border-radius:6px;flex:0 0 auto;min-width:52px;text-align:center}
+  .method.post{background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)}
+  .method.get{background:var(--blue-soft);color:var(--blue);border:1px solid var(--blue)}
+  .op .path{font-family:var(--mono);font-size:13.5px;font-weight:600}
+  .op .sum{color:var(--ink-soft);font-size:13px;margin-left:auto;text-align:right}
+  .op .detail{border-top:1px solid var(--line);padding:14px 16px;font-size:14px}
+  .op .detail p{margin:8px 0}
+  .resp{display:flex;gap:10px;align-items:baseline;padding:6px 0;border-top:1px dashed var(--line);font-size:13.5px}
+  .resp:first-of-type{border-top:none}
+  .code{font-family:var(--mono);font-weight:700;flex:0 0 44px}
+  .code.ok{color:var(--accent)} .code.warn{color:var(--amber)} .code.err{color:var(--red)}
+
+  footer{border-top:1px solid var(--line);color:var(--ink-soft);font-size:13px;padding:22px 0 60px}
+  .legend{display:flex;flex-wrap:wrap;gap:10px 18px;margin:10px 0 0;font-size:12.5px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+
+  /* interactive */
+  .presets{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+  .preset{font-family:var(--mono);font-size:12px;padding:5px 12px;border-radius:20px;cursor:pointer;
+    border:1px solid var(--line-strong);background:var(--panel);color:var(--ink-soft)}
+  .preset:hover{color:var(--ink)}
+  .preset.active{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+  .tc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 22px;margin:0 0 12px}
+  @media(max-width:760px){.tc-grid{grid-template-columns:1fr}}
+  .force label{display:flex;justify-content:space-between;font-size:13px;color:var(--ink-soft);gap:10px}
+  .force label b{font-family:var(--mono);color:var(--ink);white-space:nowrap}
+  .force input[type=range]{width:100%;accent-color:var(--accent)}
+  .tc-out{display:flex;align-items:baseline;gap:16px;border-top:1px solid var(--line);padding-top:12px;flex-wrap:wrap}
+  .score{font-family:var(--mono);font-size:34px;font-weight:700;line-height:1}
+  .verdict{font-size:14px}
+  .chiprow{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+  .chiprow button{font-family:var(--mono);font-size:11.5px;padding:4px 11px;border-radius:20px;cursor:pointer;
+    border:1px solid var(--line-strong);background:var(--panel);color:var(--ink-soft)}
+  .chiprow button:hover{color:var(--ink)}
+  .chiprow button.active{border-color:var(--red);color:var(--red);background:var(--red-soft)}
+  .bp-surv{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+  .pill.lost{color:var(--red);background:var(--red-soft);border-color:var(--red);
+    text-decoration:line-through;opacity:.7}
+  .bp-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+    border-top:1px solid var(--line);padding-top:12px;margin-top:4px}
+  .bp-head b{font-size:15px}
+  @keyframes bpfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  #bp-card>*{animation:bpfade .28s ease}
+
+  @media print{
+    header.top,nav.toc{position:static}
+    body{background:#fff;color:#000;font-size:11.5px}
+    .panel,.tablewrap,.op{break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <h1>Steppe&nbsp;Integrations · Odd&nbsp;Little&nbsp;Bird — Collaboration Dashboard</h1>
+    <span class="sub">Artifact-driven development meets a four-gate pipeline — a living document</span>
+    <div class="meta">
+      <span>v<b>0.3.0</b></span>
+      <span>updated <b>2026-07-20</b></span>
+      <span>status <b style="color:var(--blue)">PROPOSED · awaiting your reply</b></span>
+    </div>
+  </div>
+<nav class="toc">
+  <div class="wrap">
+    <a href="#thesis">Thesis</a>
+    <a href="#goodfaith">Good faith</a>
+    <a href="#reconcile">Concept ↔ Reality</a>
+    <a href="#spec">The spec</a>
+    <a href="#sessions">Sessions</a>
+    <a href="#subject">Subject repo</a>
+    <a href="#artifacts">Artifact log</a>
+    <a href="#questions">Open questions</a>
+    <a href="#log">Changelog</a>
+  </div>
+</nav>
+<div id="prog" style="position:absolute;bottom:0;left:0;height:2px;background:var(--accent);width:0"></div>
+</header>
+
+<main class="wrap">
+
+  <section id="thesis">
+    <p class="kicker">Why this document exists</p>
+    <h2>Two halves of one pipeline, discovered independently</h2>
+    <p class="lede">
+      You run a <b>four-gate pipeline</b> that keeps published documentation true after it ships. I build
+      engineering systems that emit <b>timestamped, citable artifacts</b> as a byproduct of the work.
+      On the podcast, these turned out to be the same thesis approached from opposite ends. This page is
+      the follow-up — my proposal for how we can structure a collaboration: evidence first, ask second.
+    </p>
+
+    <div class="panel">
+      <p style="margin-top:0"><b>The one-line thesis.</b> Machine-readable documentation is a formatting
+      problem. Machine-trustworthy documentation is a process problem — and the process has two halves:</p>
+      <p style="font-size:17px;margin:10px 0 4px">
+        <b style="color:var(--accent)">Traceable upstream, verified downstream</b> — documentation agents
+        can trust because it carries evidence at creation and passes tests in production.</p>
+      <p class="note" style="margin-bottom:0">Almost nobody owns the seam between the halves: turning an
+      artifact trail into published pages that stay tied to the artifacts they came from, while both keep
+      changing. This dashboard is the operating surface for finding out whether the two of us can.</p>
+    </div>
+
+    <div class="panel">
+      <p class="kicker" style="margin-top:0">The proposal, in one breath</p>
+      <ol style="margin:6px 0 4px">
+        <li><b>A 20–30 minute screen swap</b> — you show the VMs and your Claude Code setup, I show
+          artifacts generating themselves as work happens. Cameras on, no slides.</li>
+        <li><b>A 60–90 minute working session</b> — one simulated product change: a coding agent drafts the
+          doc update plus its Doc Detective test from my artifacts, and the PR must survive your four
+          gates in public CI. You drive, co-drive, or watch and heckle.</li>
+        <li><b>Co-author the writeup</b> — a first draft exists; it ships once it can cite a real merged PR
+          instead of a promise.</li>
+      </ol>
+      <p style="margin:4px 0 0;font-size:13.5px;color:var(--ink-soft)">Nothing below is agreed yet. The only
+        homework is §07 — five questions, answerable over email or LinkedIn.</p>
+    </div>
+
+    <div class="legend">
+      <span><span class="pill live">LIVE</span> exists &amp; verified today</span>
+      <span><span class="pill partial">PARTIAL</span> exists, not yet verified or public</span>
+      <span><span class="pill gap">GAP</span> does not exist yet</span>
+      <span><span class="pill plan">PLANNED</span> designed, not built</span>
+    </div>
+  </section>
+
+  <section id="goodfaith">
+    <h2><span class="n">01</span>Good faith — we consumed and tested your work first</h2>
+    <p class="lede">Before proposing anything, I pulled <code>oddlittlebird/showcase-site</code>, built it
+      locally, and read the pipeline from the files. Every claim below anchors to a file in <b>your</b> repository.</p>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th style="width:26%">Claim</th><th style="width:14%">State</th><th>Evidence</th></tr></thead>
+        <tbody id="evidence-rows">
+          <tr>
+            <td>Repository cloned and built locally</td>
+            <td><span class="pill live">LIVE</span></td>
+            <td>Commit <code>b55ceb2</code>, node v24.18.0 / npm 11.16.0. <code>npm ci</code> ≈26s (1,312 packages);
+              <code>docusaurus build</code> ≈6s, no warnings. <span class="src">website/build — 2026-07-20</span></td>
+          </tr>
+          <tr>
+            <td>The four gates, inventoried from source</td>
+            <td><span class="pill live">LIVE</span></td>
+            <td>Five custom Vale rules read, not skimmed — <code>Acronyms</code>, <code>Headings</code>,
+              <code>Passive</code>, <code>StackedHeadings</code>, <code>Terminology</code>.
+              <span class="src">.vale/styles/Diana/ · .codespellignore · .lychee.toml · doc-detective/config.json</span></td>
+          </tr>
+          <tr>
+            <td>The pipeline is bigger than the site says</td>
+            <td><span class="pill live">LIVE</span></td>
+            <td>The pipeline page describes four checks. The source shows <b>nine workflows</b>: the four gates,
+              plus five granular Doc Detective jobs (pipeline page, llms.txt verification, API-reference
+              screenshots, responsive screenshots, a daily doodle), a headings counter, and a deploy that
+              fans in on four workflow completions. Undersold, if anything. <span class="src">.github/workflows/ (9 files)</span></td>
+          </tr>
+          <tr>
+            <td>Agent-facing files held to the same lint bar</td>
+            <td><span class="pill live">LIVE</span></td>
+            <td>Confirmed: <code>llms.txt</code> rides the Lint and Spell-check path filters <i>and</i> has its own
+              verification workflow, plus a counter that commits heading counts back as JSON.
+              <span class="src">lint.yml · spellcheck.yml · llms-txt test workflow</span></td>
+          </tr>
+          <tr>
+            <td>Doc Detective pinned and runnable</td>
+            <td><span class="pill live">LIVE</span></td>
+            <td>Pinned to <code>doc-detective@4.9.0</code> across workflows; version confirmed locally via npx.
+              Browser tests run post-deploy against the live site by design — noted, not skipped.
+              <span class="src">doc-detective/tests/sample.json</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="note warn"><b>One finding, offered as a gift.</b> <code>npm run typecheck</code> currently fails —
+      two <code>TS2503: Cannot find namespace 'JSX'</code> errors, in
+      <span class="src">src/components/LlmsHeadingCounts/index.tsx:12</span> and
+      <span class="src">src/components/StatusBadge/index.tsx:17</span>. The SWC-based build passes anyway, and no
+      workflow runs typecheck, so CI never sees it. It is a two-line fix, and it would make a fitting
+      handshake: the first PR through your gates could be the one that adds a tenth.</p>
+  </section>
+
+  <section id="reconcile">
+    <h2><span class="n">02</span>Concept ↔ Reality</h2>
+    <p class="lede">The honest ledger. What exists, what's drafted, what's still a claim.</p>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th style="width:30%">Concept</th><th style="width:14%">State</th><th>Where it lives / what's missing</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Shared thesis, stated out loud</td>
+            <td><span class="pill live">LIVE</span></td>
+            <td>Recorded 30-minute podcast conversation on documentation. <span class="src">recording — link pending publication decision</span></td>
+          </tr>
+          <tr>
+            <td>Response in your published format</td>
+            <td><span class="pill live">LIVE</span></td>
+            <td>You published OpenAPI 3.1 as craft proof; this repo answers with one. <span class="src">spec/trust-api.yaml</span></td>
+          </tr>
+          <tr>
+            <td>Your pipeline, consumed and tested</td>
+            <td><span class="pill live">LIVE</span></td>
+            <td>Cloned at <code>b55ceb2</code>, built locally, nine workflows inventoried from source, one
+              genuine finding included. <span class="src">§01</span></td>
+          </tr>
+          <tr>
+            <td>Session 1 — show-and-tell</td>
+            <td><span class="pill plan">PLANNED</span></td>
+            <td>Designed, 20–30 min, cameras on. Yours to green-light. <span class="src">§04</span></td>
+          </tr>
+          <tr>
+            <td>Session 2 — one change through the seam</td>
+            <td><span class="pill plan">PLANNED</span></td>
+            <td>Use case proposed, role yours to pick, five questions open. <span class="src">§07</span></td>
+          </tr>
+          <tr>
+            <td>The technical contribution — Documentation Trust API</td>
+            <td><span class="pill live">LIVE</span></td>
+            <td>Cohesive-implementation spec: trust scoring on a manifest transport, grounded in both
+              running repos. Alternatives scored and recorded the ADD way. <span class="src">spec/trust-api.yaml · docs/adr/0001</span></td>
+          </tr>
+          <tr>
+            <td>A real enterprise-grade subject repo, public</td>
+            <td><span class="pill live">LIVE</span></td>
+            <td><code>djcdevelopment/commandcenter</code> — my agent-fleet project, made public for
+              this: 22 compounding ADRs, telemetry ledgers, machine-checked doc claims. Robust,
+              timestamp-organized, honestly not well organized — the realistic input for a live demo. <span class="src">§05</span></td>
+          </tr>
+          <tr>
+            <td>Public proof of collaboration</td>
+            <td><span class="pill gap">GAP</span></td>
+            <td>None yet — honestly. Session 2 produces it: a merged PR on a public repo, four gates green. <span class="src">§04</span></td>
+          </tr>
+          <tr>
+            <td>Co-authored piece — "the seam nobody owns"</td>
+            <td><span class="pill partial">PARTIAL</span></td>
+            <td>Full first-pass draft exists (written to pass your Vale rules); ships only after Session 2 gives it a live proof link. Private until co-edited.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="spec">
+    <h2><span class="n">03</span>The contribution — a Documentation Trust API</h2>
+    <p class="lede">What the two standards look like as one cohesive implementation. Source of truth:
+      <a href="../../spec/trust-api.yaml"><code>spec/trust-api.yaml</code></a> (OpenAPI 3.1) ·
+      decision record: <a href="../adr/0001-trust-score-on-a-manifest-transport.md"><code>ADR-0001</code></a>,
+      which scores the four alternatives this beat. Click an operation to expand it.</p>
+
+    <div class="panel">
+      <p class="kicker" style="margin-top:0">Why this shape — the convergence</p>
+      <p style="margin:6px 0">The two repos already built the same ideas from opposite directions. The spec
+        names them:</p>
+      <div class="tablewrap" style="margin-bottom:0">
+        <table>
+          <thead><tr><th>commandcenter (my side)</th><th>showcase-site (your side)</th><th>Named in the spec as</th></tr></thead>
+          <tbody>
+            <tr><td><code>docs/doc-claims.json</code> — prose claims machine-checked against system state</td>
+                <td>Doc Detective — documented steps machine-checked against the live product</td>
+                <td>One <code>accuracy</code> gate, two targets</td></tr>
+            <tr><td><code>runs/*/PROVENANCE.md</code> — every value traced to a byte-level cited source</td>
+                <td>llms.txt held to the same lint bar as human pages</td>
+                <td><code>/manifest</code> — provenance, serialized</td></tr>
+            <tr><td><code>events.jsonl</code> ledgers — sha256-digested, actor-stamped events</td>
+                <td>Nine workflows with a fan-in deploy</td>
+                <td><code>/verifications</code> — immutable gate records</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note" style="margin-bottom:0"><b>The one-move repair.</b> Your gap (no provenance model) is
+        filled by my artifact graph; my gap (implicit, timestamp-organized) gets forced into a computable
+        schema by your gates. Neither repair works without the other party.</p>
+    </div>
+
+    <details class="op" open>
+      <summary><span class="method get">GET</span><span class="path">/pages/{pageId}/trust</span>
+        <span class="sum">The endpoint the spec exists for</span></summary>
+      <div class="detail">
+        <p>One auditable composite per page. The weights are a governance decision — the spec requires them
+          to live in an ADR. Don't read about it; drag it:</p>
+        <div class="resp"><span class="code ok">200</span><span>Trust record with <code>inputs[]</code> — a score you cannot audit is a vibe.</span></div>
+        <div class="resp"><span class="code err">404</span><span>Unknown page — or deliberately unscored (see adoption profiles).</span></div>
+      </div>
+    </details>
+
+    <div class="panel" id="tc">
+      <p class="kicker" style="margin-top:0">The score, live — drag the signals, pick the weights</p>
+      <div class="presets">
+        <button class="preset active" data-p="ours">Ours · ADR-0001</button>
+        <button class="preset" data-p="compliance">Compliance-first</button>
+        <button class="preset" data-p="agent">Agent-first</button>
+      </div>
+      <div class="tc-grid">
+        <div class="force"><label>Provenance — artifact chain behind the page <b id="v-prov">70%</b></label>
+          <input type="range" id="s-prov" min="0" max="100" value="70"></div>
+        <div class="force"><label>Days since last green accuracy run <b id="v-days">14d</b></label>
+          <input type="range" id="s-days" min="0" max="180" value="14"></div>
+        <div class="force"><label>Style gate <b id="v-style">100%</b></label>
+          <input type="range" id="s-style" min="0" max="100" value="100"></div>
+        <div class="force"><label>Link health <b id="v-links">100%</b></label>
+          <input type="range" id="s-links" min="0" max="100" value="100"></div>
+      </div>
+      <div class="tc-out">
+        <div class="score" id="tc-score">0.00</div>
+        <div class="verdict" id="tc-verdict"></div>
+      </div>
+      <p class="g" style="font-size:12.5px;color:var(--ink-soft);margin:8px 0 0" id="tc-sub"></p>
+    </div>
+
+    <details class="op">
+      <summary><span class="method get">GET</span><span class="path">/manifest</span>
+        <span class="sum">The only object that must cross an org boundary</span></summary>
+      <div class="detail">
+        <p>A lockfile for provenance: one entry per exportable artifact — id, type, unified status, source
+          commit, ADR references, digest. When engineering and docs live in different orgs, tools, or trust
+          domains, this manifest is the entire interface. Regenerate by cron, webhook, or hand.</p>
+        <div class="resp"><span class="code ok">200</span><span>Current manifest, small and diffable.</span></div>
+      </div>
+    </details>
+
+    <details class="op">
+      <summary><span class="method post">POST</span><span class="path">/verifications</span>
+        <span class="sum">Gate runs as immutable ledger records</span></summary>
+      <div class="detail">
+        <p>CI is the caller. Four gates — <code>style</code>, <code>spelling</code>, <code>links</code>,
+          <code>accuracy</code> — each write a record per run: actor, outcome, digest, timestamp. Corrections
+          append; nothing edits history.</p>
+        <div class="resp"><span class="code ok">201</span><span>Recorded, immutably.</span></div>
+      </div>
+    </details>
+
+    <details class="op">
+      <summary><span class="method get">GET</span><span class="path">/coverage</span>
+        <span class="sum">The failure-mode ledger — evidence-linked, not hypothetical</span></summary>
+      <div class="detail">
+        <p>Rows are concrete failure modes; columns say which practice prevents each, with links to real
+          retros and real gate failures. Uncovered rows become ADR proposals — gaps feed the roadmap instead
+          of hiding in a slide deck. Costs a markdown table to start; survives every adoption blocker.</p>
+        <div class="resp"><span class="code ok">200</span><span>Current matrix.</span></div>
+      </div>
+    </details>
+
+    <details class="op">
+      <summary><span class="method get">GET</span><span class="path">/adoption-profiles</span>
+        <span class="sum">What survives when enterprise blockers hit</span></summary>
+      <div class="detail">
+        <p>"Half done" is not a status; a named tier is. Hit a blocker below and watch what survives:</p>
+        <div class="resp"><span class="code ok">200</span><span>One profile per blocker.</span></div>
+      </div>
+    </details>
+
+    <div class="panel" id="bp">
+      <p class="kicker" style="margin-top:0">Click a blocker — watch pieces fall off, coverage keeps a name</p>
+      <div class="chiprow" id="bp-chips"></div>
+      <div id="bp-card"></div>
+    </div>
+
+    <details class="op">
+      <summary><span class="method post">POST</span><span class="path">webhook: trustDecayed</span>
+        <span class="sum">Decay files work upstream — the loop that makes it one system</span></summary>
+      <div class="detail">
+        <p>When verification goes stale or a cited ADR is superseded, trust decays past threshold and this
+          webhook files a ticket against the owning artifact in the engineering repo's own planning surface.
+          Publication decay creates engineering work. That direction of flow is the part neither standard
+          had alone.</p>
+        <div class="resp"><span class="code ok">202</span><span>Upstream work item created.</span></div>
+      </div>
+    </details>
+
+    <p class="note">Sessions are in §04, open questions in §07, and booking happens over email or LinkedIn
+      like normal humans. The only spec here is the contribution. Public proof of collaboration is still a
+      gap — Session 2 exists to close it.</p>
+  </section>
+
+  <section id="sessions">
+    <h2><span class="n">04</span>Operating model</h2>
+    <p class="lede">Small phases, each producing artifacts the next one cites. No phase depends on a leap of faith.</p>
+
+    <div class="panel">
+      <div class="phase done">
+        <div class="dot">0</div>
+        <div class="body">
+          <h4>Podcast conversation <span class="pill live">LIVE</span></h4>
+          <p class="g">30 minutes on documentation, recorded. The accidental discovery that we hold
+            opposite halves of the same thesis. First co-produced artifact.</p>
+        </div>
+      </div>
+      <div class="phase now">
+        <div class="dot">1</div>
+        <div class="body">
+          <h4>Show-and-tell <span class="pill plan">PLANNED</span> <span class="pill info">20–30 MIN</span></h4>
+          <p class="g">Mutual tour of real working environments — VMs, Claude Code setups, agent workflows,
+            trust boundaries. Ends by picking the working-session use case before we hang up.</p>
+        </div>
+      </div>
+      <div class="phase">
+        <div class="dot">2</div>
+        <div class="body">
+          <h4>Working session — one change through the seam <span class="pill plan">PLANNED</span> <span class="pill info">60–90 MIN</span></h4>
+          <p class="g">Plan locked at the top of the call → build live → retro within 24h. Output: the
+            merged, gate-passing PR that becomes the public proof, plus the artifact trail that becomes
+            the writeup's spine.</p>
+        </div>
+      </div>
+      <div class="phase">
+        <div class="dot">3</div>
+        <div class="body">
+          <h4>Co-authored piece <span class="pill partial">PARTIAL</span></h4>
+          <p class="g">"The Seam Nobody Owns" — first-pass draft exists, written to pass your Vale rules.
+            Ships only once it can cite the Session 2 PR instead of a promise.</p>
+        </div>
+      </div>
+      <div class="phase">
+        <div class="dot">4</div>
+        <div class="body">
+          <h4>The fork <span class="pill gap">OPEN</span></h4>
+          <p class="g">Business-facing (documentation-readiness engagements with generated-by-default proof)
+            or writer-facing (the methodology translated for technical writers, on your channel). Decided by
+            observed pull, not by planning.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="subject">
+    <h2><span class="n">05</span>Subject repo — what the change flows through</h2>
+    <p class="lede">The working session needs an engineering repo whose artifacts feed the docs change.
+      Two candidates, both mine.</p>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th style="width:24%">Candidate</th><th style="width:14%">State</th><th>Character</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>djcdevelopment/commandcenter</code></td>
+            <td><span class="pill live">PUBLIC</span></td>
+            <td><b>The default subject.</b> A hybrid local/cloud agent fleet that used itself to build itself,
+              documented the whole way: 22 compounding ADRs, atomic retros with role-based self-critique,
+              sha256-digested telemetry ledgers, field-level provenance files, machine-checked doc claims —
+              and 71 flat root files with no index. Robust standard, honest disorganization: the realistic
+              enterprise input, not a staged demo. Flipped public 2026-07-20 after a credentials audit.</td>
+          </tr>
+          <tr>
+            <td><code>djcdevelopment/Lumberjacks</code></td>
+            <td><span class="pill live">PUBLIC</span></td>
+            <td>Multiplayer game infrastructure. Same artifact discipline, smaller corpus — dashboards, ADRs,
+              telemetry docs. The fallback if commandcenter is too much repo for one session.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="note warn"><b>Honest note:</b> your showcase-site remains the docs side of the demo regardless —
+      the four gates are the destination. The subject repo only decides which artifact trail feeds them.</p>
+  </section>
+
+  <section id="artifacts">
+    <h2><span class="n">06</span>Artifact log</h2>
+    <p class="lede">Every entry dated; statuses per the spec.</p>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th style="width:14%">Date</th><th style="width:18%">Type</th><th style="width:12%">Status</th><th>Artifact</th></tr></thead>
+        <tbody>
+          <tr><td>~2026-07-14</td><td><code>concept</code></td><td><span class="pill live">STABLE</span></td>
+            <td>Podcast recording — 30 min on documentation. Publication decision pending both parties.</td></tr>
+          <tr><td>2026-07-20</td><td><code>contract</code></td><td><span class="pill live">LIVING</span></td>
+            <td><a href="../../spec/trust-api.yaml">Documentation Trust API v0.1.0</a> — the technical
+              contribution: one cohesive implementation of both standards.</td></tr>
+          <tr><td>2026-07-20</td><td><code>adr</code></td><td><span class="pill live">STABLE</span></td>
+            <td><a href="../adr/0001-trust-score-on-a-manifest-transport.md">ADR-0001</a> — trust scoring on
+              a manifest transport, chosen over four scored alternatives. This repo practices the standard
+              it proposes.</td></tr>
+          <tr><td>2026-07-20</td><td><code>reference</code></td><td><span class="pill live">LIVING</span></td>
+            <td>This dashboard — the collaboration's operating surface.</td></tr>
+          <tr><td>2026-07-20</td><td><code>design-prompt</code></td><td><span class="pill partial">OPEN</span></td>
+            <td>Five questions (§07); the answers become the working session's locked plan.</td></tr>
+          <tr><td>2026-07-20</td><td><code>concept</code></td><td><span class="pill partial">DRAFT</span></td>
+            <td>"The Seam Nobody Owns" — co-authored piece, first pass. Private until co-edited.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="questions">
+    <h2><span class="n">07</span>Open questions — the design-prompt</h2>
+    <p class="lede">Five questions; the answers become the working session's plan. Email, LinkedIn, voice
+      memo, or a PR against this file all count.</p>
+
+    <div class="panel">
+      <ol style="margin:6px 0">
+        <li><b>Target repo:</b> your showcase-site, or a sandbox fork if you'd rather not touch the portfolio?</li>
+        <li><b>The simulated change:</b> the Garden Companion API is sitting right there — new endpoint, or a
+          changed enum that ripples into the reference docs and a Doc Detective test?</li>
+        <li><b>Recording:</b> record and publish, record private, or no recording? Whose channels?</li>
+        <li><b>Your tooling, your hands:</b> when you drive — CLI, web, IDE, or something running in one of
+          your VMs? (Genuinely curious about the VMs.)</li>
+        <li><b>What counts as proof to you:</b> at the end, which artifact would you actually show a
+          prospective client?</li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="log">
+    <h2><span class="n">08</span>Changelog</h2>
+    <div class="panel log">
+      <div class="row"><span class="d">2026-07-20</span><span><b>v0.3.0</b> — Initial publication: thesis,
+        good-faith evidence (your repo cloned at <code>b55ceb2</code>, built locally, nine workflows
+        inventoried, one typecheck finding), the Documentation Trust API with <code>ADR-0001</code>, the
+        live trust calculator and blocker picker, two proposed sessions, five open questions. Earlier
+        iterations live in git history, where they belong.</span></div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>This page is one static file. No trackers, no external requests, no build step — view source.
+      It updates by pull request, and the changelog says what changed. That is the whole trick, and it is
+      also the thesis.</p>
+    <p style="font-family:var(--mono);font-size:12px">steppe-integrations/oddlittlebird · CC BY-NC 4.0 ·
+      maintained as a living document</p>
+  </div>
+</footer>
+
+<script>
+const $=id=>document.getElementById(id);
+
+// trust score, live
+const WEIGHTS={ours:{p:.40,v:.35,s:.15,l:.10},compliance:{p:.55,v:.30,s:.05,l:.10},agent:{p:.30,v:.50,s:.05,l:.15}};
+let WSEL='ours';
+function calc(){
+  const prov=+$('s-prov').value/100, days=+$('s-days').value,
+        style=+$('s-style').value/100, links=+$('s-links').value/100;
+  const ver=Math.exp(-Math.LN2*days/42), w=WEIGHTS[WSEL];
+  const t=w.p*prov+w.v*ver+w.s*style+w.l*links;
+  $('v-prov').textContent=Math.round(prov*100)+'%';
+  $('v-days').textContent=days+'d';
+  $('v-style').textContent=Math.round(style*100)+'%';
+  $('v-links').textContent=Math.round(links*100)+'%';
+  const col=t>=.7?'var(--accent)':t>=.5?'var(--amber)':'var(--red)';
+  $('tc-score').textContent=t.toFixed(2); $('tc-score').style.color=col;
+  $('tc-verdict').textContent=t>=.7?'≥ 0.70 — an agent acts on this page':'< 0.70 — the page is treated as absent; a decay ticket files upstream';
+  $('tc-verdict').style.color=col;
+  $('tc-sub').textContent='provenance '+(w.p*prov).toFixed(2)+' + verification '+(w.v*ver).toFixed(2)
+    +' (green halves every 42 days: ×'+ver.toFixed(2)+') + style '+(w.s*style).toFixed(2)
+    +' + links '+(w.l*links).toFixed(2)+' · weights '+(WSEL==='ours'?'per ADR-0001':WSEL);
+}
+document.querySelectorAll('#tc input').forEach(i=>i.addEventListener('input',calc));
+document.querySelectorAll('#tc .preset').forEach(b=>b.addEventListener('click',()=>{
+  WSEL=b.dataset.p;
+  document.querySelectorAll('#tc .preset').forEach(x=>x.classList.toggle('active',x===b));
+  calc();
+}));
+calc();
+
+// adoption blockers: nine pieces, click a blocker, watch what falls off
+const PIECES=['artifact graph','manifest','style+spell gates','link checks','accuracy tests',
+              'trust scoring','decay tickets','agent automation','writer distillation'];
+// per piece: k = kept, d = degraded, x = lost
+const PROFILES=[
+ {n:'docs team: no CI access',s:['d','k','d','d','x','d','x','x','d'],
+  cov:'Docs runs manual checks against the exported manifest; provenance reads "unknown" instead of faked.',tier:'tier-1-structural'},
+ {n:'eng & docs: different orgs',s:['d','k','k','k','d','d','x','d','k'],
+  cov:'The manifest is the entire interface; provenance coarsens to release tags.',tier:'tier-1-structural'},
+ {n:'compliance: audit trails',s:['k','k','k','k','k','k','k','k','k'],
+  cov:'Strongest fit — numeric, timestamped, versioned evidence per page. Nothing falls off.',tier:'tier-3-full-loop'},
+ {n:'legacy CMS: no gates',s:['k','k','d','d','d','d','d','d','k'],
+  cov:'Everything goes periodic instead of per-change. The ceiling is honest.',tier:'tier-2-verified'},
+ {n:'no greenfield budget',s:['d','d','d','x','x','d','x','x','d'],
+  cov:'Status headers, a hand manifest for top pages, a quarterly hand-score. Spreadsheet-tier, still real.',tier:'tier-0-hygiene'},
+ {n:'security: no agents in prod',s:['k','k','k','k','k','k','k','d','k'],
+  cov:'Producing jobs are plain CI scripts with service accounts; agents only read the score.',tier:'tier-3-full-loop'},
+ {n:'no first tech writer yet',s:['k','k','k','k','d','k','k','k','x'],
+  cov:'The score computes with no writer at all — and the tier ladder becomes the hiring case.',tier:'tier-1-structural'}];
+const chips=$('bp-chips');
+PROFILES.forEach((p,i)=>{const b=document.createElement('button');b.textContent=p.n;
+  b.addEventListener('click',()=>show(i,b));chips.appendChild(b);});
+function show(i,btn){
+  chips.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===btn));
+  const p=PROFILES[i];
+  const tc=p.tier.indexOf('tier-3')===0?'live':p.tier.indexOf('tier-2')===0?'plan':p.tier.indexOf('tier-1')===0?'partial':'info';
+  const kept=p.s.filter(v=>v!=='x').length;
+  const pills=PIECES.map((name,j)=>{
+    const st=p.s[j];
+    const cls=st==='k'?'live':st==='d'?'partial':'lost';
+    return '<span class="pill '+cls+'">'+name+'</span>';
+  }).join('');
+  $('bp-card').innerHTML=
+    '<div class="bp-head"><b>'+p.n+'</b><span><span class="pill '+tc+'">'+p.tier+'</span></span></div>'
+   +'<div class="bp-surv">'+pills+'</div>'
+   +'<p style="margin:6px 0 8px;font-size:14px"><b>'+kept+' of '+PIECES.length+' pieces survive.</b> '+p.cov+'</p>'
+   +'<span style="font-size:12.5px;color:var(--ink-soft)">a named rung, not "half done" — green kept · amber degraded · red lost</span>';
+}
+show(0,chips.querySelector('button'));
+
+// scroll progress
+(function(){const p=$('prog');function s(){const h=document.documentElement;
+  const m=h.scrollHeight-h.clientHeight;p.style.width=(m>0?h.scrollTop/m*100:0)+'%';}
+  document.addEventListener('scroll',s,{passive:true});s();})();
+</script>
+</body>
+</html>

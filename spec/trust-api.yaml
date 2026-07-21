@@ -1,0 +1,400 @@
+openapi: 3.1.0
+info:
+  title: Documentation Trust API
+  version: 0.1.0
+  summary: >-
+    A reference contract for one cohesive documentation system — evidence created
+    upstream, verified downstream, trust computed at the seam.
+  description: |
+    This spec is the contribution: what the two standards look like as one implementation.
+
+    It is grounded in two running codebases, not invented:
+
+    - **Upstream (artifact-driven development)** — `djcdevelopment/commandcenter`:
+      22 compounding ADRs, atomic retros scoped to commit ranges, telemetry ledgers
+      (`runs/*/events.jsonl`) with sha256 digests of every action, field-level citation
+      files (`runs/*/PROVENANCE.md`), and machine-checked prose claims
+      (`docs/doc-claims.json`).
+    - **Downstream (verification pipeline)** — `oddlittlebird/showcase-site`:
+      four gates on every docs PR (Vale, codespell, Lychee, Doc Detective) across nine
+      workflows, with agent-facing files held to the same lint bar as human pages.
+
+    The two repos already contain the same idea built from opposite directions:
+    `doc-claims.json` tests prose against system state; Doc Detective tests prose against
+    the live product. This API names the seam they were both reaching for.
+
+    Nothing here requires a hosted service. Every resource can be a file in a repository;
+    every POST can be a CI job; the API shape exists so that either side can be replaced,
+    degraded, or adopted piecemeal without renegotiating the whole system — see
+    `/adoption-profiles` for the honest degradation ladder.
+  contact:
+    name: Steppe Integrations × Odd Little Bird
+    url: https://github.com/steppe-integrations/oddlittlebird
+  license:
+    name: CC BY-NC 4.0
+    identifier: CC-BY-NC-4.0
+servers:
+  - url: about:blank
+    description: Reference contract. Implementations are repositories plus CI, not servers.
+tags:
+  - name: upstream
+    description: Artifacts and the exchange manifest — evidence at creation.
+  - name: downstream
+    description: Pages and verification records — evidence at publication, continuously.
+  - name: seam
+    description: Trust computation and decay — the layer neither standard owns alone.
+  - name: adoption
+    description: What survives when enterprise blockers remove pieces.
+
+paths:
+  /artifacts:
+    get:
+      operationId: listArtifacts
+      tags: [upstream]
+      summary: List engineering artifacts with their provenance metadata.
+      description: |
+        The eleven artifact types, unified under one status lifecycle. Every artifact
+        carries the fields that make it citable: source commit, dated status header,
+        and the ADRs it rests on. Prior art: the commandcenter root — 71 artifacts
+        strong and honestly not well organized, which is what makes it a realistic
+        subject rather than a staged demo.
+      parameters:
+        - name: type
+          in: query
+          schema: { $ref: '#/components/schemas/ArtifactType' }
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/ArtifactStatus' }
+      responses:
+        '200':
+          description: Artifacts with provenance.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Artifact' }
+
+  /manifest:
+    get:
+      operationId: getManifest
+      tags: [upstream]
+      summary: The artifact exchange manifest — the only object that must cross an org boundary.
+      description: |
+        A lockfile for provenance. When engineering and documentation live in different
+        orgs, tools, or trust domains, this manifest is the entire interface: one entry
+        per exportable artifact, small and diffable. The docs side validates page
+        references against it; the eng side regenerates it by cron, webhook, or hand.
+        Neither side needs read access to the other's internals.
+
+        Prior art: `runs/*/PROVENANCE.md` in commandcenter already traces synthetic
+        values to byte-level cited sources; this schema is that discipline, serialized.
+      responses:
+        '200':
+          description: Current manifest.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  generated_at: { type: string, format: date-time }
+                  source_repo: { type: string }
+                  entries:
+                    type: array
+                    items: { $ref: '#/components/schemas/ManifestEntry' }
+
+  /pages:
+    get:
+      operationId: listPages
+      tags: [downstream]
+      summary: Published documentation units and the artifacts they cite.
+      responses:
+        '200':
+          description: Pages with their upstream references.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Page' }
+
+  /verifications:
+    post:
+      operationId: recordVerification
+      tags: [downstream]
+      summary: Record a gate run against a page.
+      description: |
+        CI is the caller. Each of the four gates — style, spelling, links, accuracy —
+        writes a record per run. The record shape mirrors the commandcenter ledger
+        pattern (actor, outcome, digest, timestamp), because a verification is just
+        another event that must survive an audit.
+
+        Accuracy records deserve special mention: Doc Detective walking the documented
+        steps against the live product, and `doc-claims.json` checking prose claims
+        against system state, are the same gate implemented against different targets.
+        Both report here.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VerificationRecord' }
+      responses:
+        '201':
+          description: Recorded. Immutable once written; corrections append, never edit.
+
+  /pages/{pageId}/trust:
+    get:
+      operationId: getPageTrust
+      tags: [seam]
+      summary: The computed trust record for a page — the endpoint this spec exists for.
+      description: |
+        Trust is a composite of four signals, each traceable to its inputs:
+
+        - **provenance** — depth and freshness of the artifact chain behind the page
+          (does it cite a Locked design-brief? an Accepted ADR? or nothing?)
+        - **verification** — most recent accuracy-gate result, decayed by age
+        - **style** and **links** — the cheap gates, fresh from the last PR
+
+        The weighting formula is a governance decision, and the spec deliberately does
+        not hardcode it: an implementation MUST record its weights as an ADR. That one
+        requirement forces the upstream discipline into the downstream world — the
+        formula gets a decision record, a date, and a supersession trail like anything
+        else that matters.
+
+        Agents threshold on this value before acting. A well-structured page below
+        threshold is treated as absent — because a well-structured file that contains
+        wrong information is worse than no file.
+      parameters:
+        - name: pageId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Current trust record, with cited inputs.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TrustRecord' }
+        '404':
+          description: Page unknown — or deliberately unscored (see adoption profiles).
+
+  /coverage:
+    get:
+      operationId: getCoverageMatrix
+      tags: [adoption]
+      summary: The failure-mode ledger — what each practice actually prevents.
+      description: |
+        The standing cross-index that sells the system before any code runs: rows are
+        concrete failure modes ("agent trusts a broken llms.txt", "author misremembers
+        decision timing", "docs describe a removed feature"), columns say which
+        practice prevents each one, with evidence links to real retros and real gate
+        failures. Uncovered rows become ADR proposals — gaps feed the roadmap instead
+        of hiding in a slide deck.
+      responses:
+        '200':
+          description: Current matrix.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CoverageRow' }
+
+  /adoption-profiles:
+    get:
+      operationId: listAdoptionProfiles
+      tags: [adoption]
+      summary: Named degradation profiles — what survives each enterprise blocker.
+      description: |
+        The honest answer to "we can't adopt all of this." Each profile names a real
+        blocker, the subset of the system that survives it, the coverage that subset
+        still provides, and the ceiling it imposes — a named tier, not a vague
+        "partially adopted." Pieces of the combined standard provide more total
+        coverage than either standard alone, and this endpoint is where that claim
+        gets specific.
+      responses:
+        '200':
+          description: Profiles, one per blocker.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AdoptionProfile' }
+              example:
+                - blocker: docs-team-has-no-ci-access
+                  surviving_components: [manifest, style-gate-manual, coverage-matrix]
+                  coverage_retained: >-
+                    Docs team runs its own checks against the exported manifest;
+                    trust scores compute from downstream signals only, provenance
+                    marked "unknown" rather than faked.
+                  ceiling: tier-1-structural
+                - blocker: security-bars-agents-from-prod-repos
+                  surviving_components: [manifest-cron, all-gates, trust-score]
+                  coverage_retained: >-
+                    Full scoring. Agents only read the score; every producing job is
+                    a plain CI script with a service account.
+                  ceiling: tier-3-full-loop
+
+webhooks:
+  trustDecayed:
+    post:
+      operationId: onTrustDecayed
+      tags: [seam]
+      summary: Fired when a page's trust falls below threshold — decay drives upstream work.
+      description: |
+        The feedback loop that makes this one system instead of two stapled together.
+        When verification goes stale or a cited ADR is superseded, the page's trust
+        decays past threshold and this webhook files work upstream — a ticket against
+        the owning artifact, in the engineering repo's own planning surface.
+        Publication decay creates engineering work. That direction of flow is the part
+        neither standard had alone.
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DecayEvent' }
+      responses:
+        '202':
+          description: Upstream work item created.
+
+components:
+  schemas:
+    ArtifactType:
+      type: string
+      enum: [vision, roadmap, design-prompt, design-brief, concept, contract, reference, runbook, adr, retro, handoff]
+      description: Eleven types, each with one job.
+
+    ArtifactStatus:
+      type: string
+      enum: [draft, living, locked, stable, superseded]
+      description: |
+        One lifecycle, unifying the two vocabularies observed in the wild
+        (`Accepted/Implemented/Pending` on ADRs; `TODO/DONE/BLOCKED/GATED` on plan
+        dashboards). Superseded is a status, not a deletion — tombstones point forward.
+
+    Artifact:
+      type: object
+      required: [id, type, status, last_updated, source_commit]
+      properties:
+        id: { type: string }
+        type: { $ref: '#/components/schemas/ArtifactType' }
+        status: { $ref: '#/components/schemas/ArtifactStatus' }
+        last_updated: { type: string, format: date }
+        source_commit: { type: string, description: The commit whose timestamp makes this citable. }
+        adr_refs:
+          type: array
+          items: { type: string }
+          description: The decisions this artifact rests on. ADRs compound; so do citations.
+        digest: { type: string, description: sha256 of content — the ledger habit, applied to prose. }
+
+    ManifestEntry:
+      type: object
+      required: [artifact_id, type, status, last_updated, source_commit_sha]
+      properties:
+        artifact_id: { type: string }
+        type: { $ref: '#/components/schemas/ArtifactType' }
+        status: { $ref: '#/components/schemas/ArtifactStatus' }
+        last_updated: { type: string, format: date }
+        source_commit_sha: { type: string }
+        adr_refs: { type: array, items: { type: string } }
+        digest: { type: string }
+
+    Page:
+      type: object
+      required: [id, path]
+      properties:
+        id: { type: string }
+        path: { type: string }
+        artifact_refs:
+          type: array
+          items: { type: string }
+          description: Frontmatter references into the manifest. A page with none scores provenance zero — visibly.
+        agent_facing:
+          type: boolean
+          description: llms.txt, skills, and friends. Same lint bar, same scoring — no exemptions.
+
+    VerificationRecord:
+      type: object
+      required: [page_id, gate, result, run_at]
+      properties:
+        page_id: { type: string }
+        gate:
+          type: string
+          enum: [style, spelling, links, accuracy]
+        result:
+          type: string
+          enum: [pass, fail]
+        run_at: { type: string, format: date-time }
+        workflow_ref: { type: string, description: The CI run that produced this — every record cites its actor. }
+        target:
+          type: string
+          enum: [live-product, system-state]
+          description: Doc Detective checks the live product; doc-claims checks system state. Same gate, two targets.
+        digest: { type: string }
+
+    TrustRecord:
+      type: object
+      required: [page_id, trust, computed_at, inputs]
+      properties:
+        page_id: { type: string }
+        provenance_score: { type: number, minimum: 0, maximum: 1 }
+        verification_score:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Last accuracy result, decayed by days since it ran. Green from March is not green.
+        style_score: { type: number, minimum: 0, maximum: 1 }
+        link_score: { type: number, minimum: 0, maximum: 1 }
+        trust:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Weighted composite. Weights live in an ADR, not in this spec.
+        weights_adr: { type: string, description: The decision record that chose the formula. Required. }
+        computed_at: { type: string, format: date-time }
+        inputs:
+          type: array
+          items: { type: string }
+          description: Artifact ids and verification ids this score derives from. A score you cannot audit is a vibe.
+
+    CoverageRow:
+      type: object
+      required: [failure_mode, prevented_by]
+      properties:
+        failure_mode: { type: string }
+        prevented_by:
+          type: array
+          items:
+            type: string
+            enum: [upstream-artifacts, downstream-gates, seam-trust, none-yet]
+        severity: { type: string, enum: [low, medium, high] }
+        evidence: { type: array, items: { type: string }, description: Links to real retros and real gate failures — not hypotheticals. }
+
+    AdoptionProfile:
+      type: object
+      required: [blocker, surviving_components, coverage_retained, ceiling]
+      properties:
+        blocker:
+          type: string
+          enum:
+            - docs-team-has-no-ci-access
+            - eng-and-docs-in-different-orgs
+            - compliance-needs-audit-trails
+            - legacy-cms-cannot-run-gates
+            - no-greenfield-budget
+            - security-bars-agents-from-prod-repos
+            - no-first-tech-writer-yet
+        surviving_components: { type: array, items: { type: string } }
+        coverage_retained: { type: string }
+        ceiling:
+          type: string
+          enum: [tier-0-hygiene, tier-1-structural, tier-2-verified, tier-3-full-loop]
+          description: A named rung is legitimate. "Half done" is not a status; a tier is.
+
+    DecayEvent:
+      type: object
+      required: [page_id, trust, threshold, cause]
+      properties:
+        page_id: { type: string }
+        trust: { type: number }
+        threshold: { type: number }
+        cause:
+          type: string
+          enum: [verification-stale, artifact-superseded, gate-failure, link-rot]
+        upstream_artifact: { type: string, description: Where the work lands. }
